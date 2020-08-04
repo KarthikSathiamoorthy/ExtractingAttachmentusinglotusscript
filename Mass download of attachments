@@ -1,0 +1,83 @@
+Below lines of code are used to extract all the attachments present in a database. 
+View is handled which has all the documents of the database to get the attachments. 
+Below lines of code are written in lotus script. 
+
+Option Public
+Option Declare
+%Include "lserr.lss"
+%Include "lsconst.lss"
+
+
+
+Sub Initialize
+	
+	Dim session As NotesSession
+	Dim db As NotesDatabase
+	Dim doc As NotesDocument
+	Dim body As NotesItem
+	Dim view As NotesView
+	Dim att As NotesEmbeddedObject 
+	Set session = New NotesSession
+	Set db = session.CurrentDatabase
+	Set view = db.getview("ViewName)")
+	Set doc = view.GetFirstDocument
+	Dim fileNum As Integer
+	Const DIR_NOT_FOUND = 76
+	Dim pathName As String, fileName As String
+	Dim create As Variant
+	Dim ole As String
+	Dim itemtype As String
+	ole$ = "1085"
+	
+
+Do While Not doc Is Nothing
+		If doc.categories(0) = "" Then 
+			GoTo Goahead
+		Print "Not a valid document"
+			End If
+			
+					
+	If doc.HasEmbedded Then 
+	
+			Set body = doc.GetFirstItem("$FILE") 
+			itemtype = CStr(body.Type)
+			While Not(StrCompare(itemtype,ole,0))
+				Call body.Remove()
+				Set body = doc.GetFirstItem("$FILE") 
+				On Error GoTo Goahead
+			itemtype = CStr(body.Type)
+			Wend
+			
+	
+			Set att = doc.GetAttachment(body.values(0))
+			pathName$ = "p:\" & doc.categories(0) & "\" & att.Source
+			On Error Resume Next
+			If Dir$(pathName$,16) = " " Then
+					MkDir "p:\" & doc.categories(0)
+					pathName$ = "p:\" & doc.categories(0) & "\" & att.Source         
+					Call att.ExtractFile(pathname$)
+					Print pathname$ & " extracted"
+				
+			Else
+				pathName$ = "p:\" & doc.categories(0) & "\" & att.Source
+				fileName$ = Dir$(pathName$, 0)
+				If filename$ <> "" Then
+					Print "File Already Exists"	
+				Else
+					Call att.ExtractFile(pathname$)
+					Print pathname$ & " extracted"
+				End If
+			End If	
+
+	
+End If
+Goahead:
+		Set doc = view.Getnextdocument(doc)
+		If doc Is Nothing Then
+			'MessageBox twoLiner, MB_OK, "Done"
+			MsgBox "All files are extracted in respective category folders"
+			Exit Sub
+		End If
+		
+Loop
+End Sub
